@@ -1,0 +1,9 @@
+,Estimator,Objective,CAGR,Volatility,Sharpe,Sortino,Max drawdown,Calmar,Annual turnover,Effective N,Max weight,Risk forecast ratio,Condition number,JK z vs sample,JK p vs sample,Fallbacks
+Sample · Min variance,Sample,Min variance,2.46%,3.70%,0.26,0.34,-10.15%,0.24,107%,5.0,25.00%,0.83,620,,,0
+Sample · Max Sharpe,Sample,Max Sharpe,0.94%,7.22%,-0.05,-0.06,-29.45%,0.03,450%,5.1,24.98%,0.83,620,,,29
+Ledoit-Wolf · Min variance,Ledoit-Wolf,Min variance,2.45%,3.70%,0.26,0.34,-10.06%,0.24,102%,5.0,25.00%,0.84,213,-0.16,0.875,0
+Ledoit-Wolf · Max Sharpe,Ledoit-Wolf,Max Sharpe,0.86%,7.27%,-0.06,-0.07,-30.07%,0.03,447%,5.2,24.97%,0.84,213,-0.57,0.568,29
+OAS · Min variance,OAS,Min variance,2.46%,3.70%,0.26,0.34,-10.07%,0.24,105%,5.0,25.00%,0.83,375,0.37,0.711,0
+OAS · Max Sharpe,OAS,Max Sharpe,0.88%,7.24%,-0.06,-0.06,-29.56%,0.03,448%,5.1,24.97%,0.83,375,-0.47,0.638,29
+Equal weight,Equal weight,Equal weight,2.63%,13.69%,0.14,0.19,-53.30%,0.05,36%,40.0,2.50%,0.83,,,,0
+SPY buy & hold,-,Buy & hold,7.61%,21.91%,0.37,0.51,-60.83%,0.13,0%,1.0,100.00%,,,,,0
