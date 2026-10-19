@@ -8,8 +8,6 @@ statistical test on the Sharpe differences.
 
 | | |
 |---|---|
-| Difficulty | Intermediate |
-| Time | 8 to 12 hours |
 | Stack | cvxpy, scikit-learn, numpy, pandas, plotly, yfinance |
 | Concepts | Markowitz, estimation error, condition number, quadratic programming, shrinkage, walk-forward testing |
 
