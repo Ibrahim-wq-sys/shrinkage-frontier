@@ -1442,3 +1442,9 @@ export_results(CFG)
 log.info("Dashboard: %s", report_path)
 print(METRICS_DISPLAY[["CAGR", "Volatility", "Sharpe", "Max drawdown", "Annual turnover",
                        "Risk forecast ratio", "JK p vs sample"]].to_string())
+print("\nMedian condition number of the correlation matrix:")
+print(METRICS.groupby("Estimator")["Condition number"].median().dropna().round(0).to_string())
+if not SENSITIVITY.empty:
+    print("\nLookback sensitivity (equity sleeve, min variance, no cap):")
+    print(SENSITIVITY.pivot_table(index="lookback", columns="estimator",
+                                  values=["realized_vol", "turnover"]).round(4).to_string())

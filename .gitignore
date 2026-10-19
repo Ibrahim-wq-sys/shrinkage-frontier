@@ -3,3 +3,5 @@ __pycache__/
 data/*.csv
 outputs/figures/*.png
 .venv/
+outputs/*.csv
+outputs/report.html

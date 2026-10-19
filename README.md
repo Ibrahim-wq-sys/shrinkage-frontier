@@ -210,7 +210,7 @@ weights, will be.
 *Target choice.* scikit-learn's target is F = λ̄ I, the same variance for every asset. In a
 multi-asset universe that is a poor target: SHY's variance is about 1/100th of EWZ's. With
 the identity target, Ledoit-Wolf min-variance portfolios came out *worse* than sample in
-testing. The code therefore runs the estimators on standardised returns and rescales,
+development testing on simulated data. The code therefore runs the estimators on standardised returns and rescales,
 `Σ = D · LW(corr) · D`. Each asset keeps its own variance and only the correlations shrink.
 `Config.shrink_correlation = False` restores plain scikit-learn behaviour.
 
@@ -290,53 +290,59 @@ colour-blind safe for three series.
 
 ### Results
 
-> The table below comes from the **synthetic fallback data**. Yahoo Finance was blocked in
-> the build environment. It confirms the pipeline works end to end. It says nothing about
-> markets. Run the notebook in Colab to get real-data results and replace this table.
+Real Yahoo Finance data, run in Colab. Main backtest: 40 ETFs, 252-day lookback, 25% cap per
+ETF, 50% turnover limit per rebalance, 10 bps costs, monthly rebalance from Dec 2008 to
+Oct 2026. All figures are out of sample and net of costs.
 
-Main backtest: 40 assets, 252-day lookback, 25% cap, 50% turnover limit, 10 bps, Dec 2008 to Sep 2026, 214 rebalances.
-
-| Strategy | CAGR | Vol | Sharpe | Max DD | Turnover/yr | κ (median) | JK p |
+| Strategy | CAGR | Vol | Sharpe | Max DD | Turnover/yr | Risk forecast ratio | JK p vs sample |
 |---|---|---|---|---|---|---|---|
-| Sample · Min variance | 2.46% | 3.70% | 0.26 | −10.2% | 107% | 620 | |
-| Ledoit-Wolf · Min variance | 2.45% | 3.70% | 0.26 | −10.1% | 102% | 213 | 0.88 |
-| OAS · Min variance | 2.46% | 3.70% | 0.26 | −10.1% | 105% | 375 | 0.71 |
-| Sample · Max Sharpe | 0.94% | 7.22% | −0.05 | −29.5% | 450% | 620 | |
-| Ledoit-Wolf · Max Sharpe | 0.86% | 7.27% | −0.06 | −30.1% | 447% | 213 | 0.57 |
-| Equal weight | 2.63% | 13.69% | 0.14 | −53.3% | 36% | | |
+| Sample · Min variance | 2.63% | 3.68% | 0.35 | −14.75% | 107% | 0.89 | |
+| Ledoit-Wolf · Min variance | 2.64% | 3.68% | 0.35 | −14.67% | 102% | 0.90 | 0.77 |
+| OAS · Min variance | 2.63% | 3.68% | 0.35 | −14.69% | 104% | 0.90 | 0.80 |
+| Sample · Max Sharpe | 2.98% | 7.37% | 0.25 | −22.00% | 367% | 0.92 | |
+| Ledoit-Wolf · Max Sharpe | 3.23% | 7.42% | 0.28 | −21.91% | 368% | 0.93 | 0.29 |
+| OAS · Max Sharpe | 2.98% | 7.37% | 0.25 | −21.94% | 364% | 0.92 | 0.94 |
+| Equal weight (1/N, monthly) | 10.12% | 13.83% | 0.67 | −29.47% | 34% | 0.84 | |
+| SPY buy & hold | 14.84% | 17.71% | 0.79 | −33.72% | 0% | | |
 
-Sensitivity study: equity and REIT sleeve (28 ETFs), long-only, no cap, no turnover limit.
+The notebook also writes the condition numbers (`outputs/metrics.csv`) and the lookback
+sensitivity study (`outputs/lookback_sensitivity.csv`, chart 10).
 
-| Lookback (T/N) | Realized vol: sample | Realized vol: LW | Turnover: sample | Turnover: LW |
-|---|---|---|---|---|
-| 63 (2.3) | 14.91% | 14.83% | 768% | 703% |
-| 126 (4.5) | 14.72% | 14.67% | 435% | 409% |
-| 252 (9.0) | 14.51% | 14.51% | 242% | 229% |
-| 504 (18.0) | 14.74% | 14.73% | 123% | 119% |
+### Findings
 
-### Findings from building it
-
-These held during development and are worth checking against real data:
-
-1. **Shrinkage cuts the condition number by about 3x** (620 to 213 on the correlation
-   matrix) without changing the large eigenvalues that carry the real factor structure.
-2. **Position caps act as shrinkage.** With a 25% cap and a turnover limit, the three
-   estimators produce almost identical portfolios. Jagannathan and Ma (2003) proved that
-   no-short-sale constraints are equivalent to shrinking the covariance matrix. The estimator
-   matters most when constraints are loose.
-3. **The benefit scales with N/T.** In the uncapped equity sleeve, Ledoit-Wolf lowers
-   realized vol and cuts turnover by about 8% at T/N = 2.3. The gap closes by T/N = 18.
-4. **The identity target hurts multi-asset portfolios.** scikit-learn's default target pulls
-   SHY's variance up toward EWZ's. Shrinking correlations instead fixed it.
-5. **Uncapped min-variance on a multi-asset universe is degenerate.** It puts about 95% in
-   the lowest-vol asset (SHY) whatever the estimator, which is why the main backtest uses a cap.
+1. **Under realistic constraints, the covariance estimator barely matters.** Min-variance
+   results are the same to two decimal places for all three estimators. Ledoit-Wolf lifts
+   the max-Sharpe Sharpe ratio from 0.25 to 0.28 and CAGR by 0.25 points a year, but the
+   Jobson-Korkie test gives p = 0.29, so the gain is not statistically significant. This
+   matches Jagannathan and Ma (2003): a no-short-sale rule and a position cap already act as
+   covariance shrinkage, so explicit shrinkage has little left to fix.
+2. **Shrinkage trims trading a little.** Ledoit-Wolf cut min-variance turnover from 107% to
+   102% a year. Max-Sharpe turnover did not change (367% vs 368%).
+3. **Expected returns are the bigger problem.** Max-Sharpe trades 3.5 times as much as
+   min-variance and earns a lower Sharpe ratio, even with James-Stein shrunk means. Errors in
+   expected returns hurt mean-variance portfolios far more than errors in covariances
+   (Chopra and Ziemba, 1993), and no covariance estimator can fix that.
+4. **Equal weight beat every optimized portfolio on Sharpe** (0.67 vs 0.35 at best). This is
+   the DeMiguel, Garlappi and Uppal (2009) result. Min-variance did its stated job: it cut
+   volatility from 13.8% to 3.7% and halved the max drawdown. But a 3.7%-volatility portfolio
+   holds mostly low-risk bond ETFs, which earned little over a period with near-zero rates for
+   much of the sample.
+5. **Every risk model over-predicted next-month risk.** Risk forecast ratios are 0.84 to 0.93,
+   below 1.0. A trailing one-year window keeps high-volatility episodes in the estimate after
+   markets calm down. Shrinkage moved the ratio only slightly closer to 1.
+6. **The identity target hurts multi-asset portfolios** (found on simulated data during
+   development). scikit-learn's default target pulls SHY's variance up toward EWZ's.
+   Shrinking correlations instead fixed it, and that is the default here.
+7. **Uncapped min-variance on a multi-asset universe is degenerate** (found on simulated
+   data). It puts about 95% in the lowest-volatility ETF (SHY) whatever the estimator. That
+   is why the main backtest uses a 25% cap and the sensitivity study uses the equity sleeve.
 
 ## 13. Final deliverables
 
 - `notebooks/shrinkage_frontier.ipynb`: Colab notebook, runs top to bottom in about 2 minutes
 - `src/shrinkage_frontier.py`: the same code as a script, about 1,450 lines with docstrings
-- `outputs/report.html`: interactive dashboard with KPI tiles and 10 charts
-- `outputs/*.csv`: metrics, daily returns, weights and diagnostics for every strategy
+- `outputs/report.html`: interactive dashboard with KPI tiles and 10 charts (generated on each run)
+- `outputs/*.csv`: metrics, daily returns, weights and diagnostics for every strategy (generated on each run)
 - This README: methodology, results and findings
 
 ## 14. Resume description
@@ -344,24 +350,21 @@ These held during development and are worth checking against real data:
 **Covariance shrinkage in portfolio optimization** | Python, cvxpy, scikit-learn, plotly
 
 - Built a walk-forward backtester for long-only min-variance and max-Sharpe portfolios on 40
-  multi-asset ETFs (2008 to 2026, 214 monthly rebalances), comparing sample, Ledoit-Wolf and
-  OAS covariance under position caps, turnover limits and transaction costs.
+  multi-asset ETFs (Dec 2008 to Oct 2026, monthly rebalancing), comparing sample, Ledoit-Wolf
+  and OAS covariance under position caps, turnover limits and transaction costs.
 - Formulated max-Sharpe as a convex QP through the Cornuejols-Tutuncu transform and compiled
   both problems once with cvxpy parameters (DPP), solving about 1,300 problems in 15 seconds
   with a three-solver fallback chain.
-- Cut the covariance condition number by about 3x with correlation-target shrinkage. Showed
-  that sklearn's identity target hurts multi-asset portfolios, and that position caps close
-  most of the gap between estimators (Jagannathan-Ma).
-- Measured out-of-sample risk-forecast bias and tested Sharpe differences with the
-  Memmel-corrected Jobson-Korkie test. Shipped results as a self-contained interactive
-  dashboard.
+- Found that under 25% position caps, Ledoit-Wolf raised max-Sharpe Sharpe from 0.25 to 0.28,
+  but the gain was not significant (Jobson-Korkie p = 0.29), consistent with constraints acting
+  as implicit shrinkage. Equal weight (Sharpe 0.67) beat every optimized portfolio.
+- Built a self-contained interactive dashboard with efficient frontiers, eigenvalue spectra,
+  weight heatmaps and a promised-vs-realized risk analysis.
 
 Interview talking points: why sample covariance is ill-conditioned (eigenvalue bias,
 Marchenko-Pastur); why max Sharpe needs a variable change to be convex; why turnover is
 measured against drifted, not previous target, weights; why constraints act like shrinkage;
-why μ is held fixed across strategies.
-
-> After the real-data run, replace "about 3x" and "about 8%" with your own numbers.
+why equal weight is hard to beat out of sample; why μ is held fixed across strategies.
 
 ## 15. Potential upgrades
 
@@ -387,6 +390,7 @@ why μ is held fixed across strategies.
 - Chen, Y., Wiesel, A., Eldar, Y. and Hero, A. (2010). Shrinkage algorithms for MMSE covariance estimation. *IEEE Transactions on Signal Processing* (OAS).
 - Jagannathan, R. and Ma, T. (2003). Risk reduction in large portfolios: why imposing the wrong constraints helps. *Journal of Finance*.
 - DeMiguel, V., Garlappi, L. and Uppal, R. (2009). Optimal versus naive diversification. *Review of Financial Studies*.
+- Chopra, V. and Ziemba, W. (1993). The effect of errors in means, variances, and covariances on optimal portfolio choice. *Journal of Portfolio Management*.
 - Michaud, R. (1989). The Markowitz optimization enigma: is "optimized" optimal? *Financial Analysts Journal*.
 - Memmel, C. (2003). Performance hypothesis testing with the Sharpe ratio. *Finance Letters*.
 - Cornuejols, G. and Tutuncu, R. (2007). *Optimization Methods in Finance*. Cambridge University Press.
